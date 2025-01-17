@@ -72,7 +72,11 @@ android {
 }
 
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    if(project.version.toString().contains("SNAPSHOT"))
+        publishToMavenCentral(SonatypeHost.S01)
+    else
+        publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+
     signAllPublications()
     coordinates(group.toString(), "ktor-compression-zstd", version.toString())
 

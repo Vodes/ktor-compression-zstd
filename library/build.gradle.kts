@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "pw.vodes"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1-alpha1"
 
 kotlin {
     jvm()
@@ -72,11 +72,7 @@ android {
 }
 
 mavenPublishing {
-    if(project.version.toString().contains("SNAPSHOT"))
-        publishToMavenCentral(SonatypeHost.S01)
-    else
-        publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
     coordinates(group.toString(), "ktor-compression-zstd", version.toString())
 

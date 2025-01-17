@@ -64,7 +64,7 @@ kotlin {
 }
 
 android {
-    namespace = "pw.vodes.ktor-compression-zstd"
+    namespace = "pw.vodes.ktor_compression_zstd"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

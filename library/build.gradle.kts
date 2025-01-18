@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "pw.vodes"
-version = "0.0.1-alpha1"
+version = "0.0.1-alpha2"
 
 kotlin {
     jvm()

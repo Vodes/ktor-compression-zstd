@@ -1,5 +1,6 @@
 package pw.vodes.zstd
 
+import com.github.luben.zstd.Zstd
 import com.github.luben.zstd.ZstdInputStream
 import com.github.luben.zstd.ZstdOutputStream
 import io.ktor.client.utils.*
@@ -9,7 +10,10 @@ import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.isActive
+import kotlinx.io.asSource
 import kotlinx.io.readByteArray
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import kotlin.coroutines.CoroutineContext
 
@@ -17,15 +21,15 @@ actual object ZstdEncoder : ContentEncoder, Encoder by ZstdEncoder {
     override val name = "zstd"
 
     override fun decode(source: ByteReadChannel, coroutineContext: CoroutineContext): ByteReadChannel {
-        return ZstdInputStream(source.toInputStream()).toByteReadChannel(coroutineContext)
+        return source.decodeZstd(coroutineContext)
     }
 
     override fun encode(source: ByteReadChannel, coroutineContext: CoroutineContext): ByteReadChannel {
-        return source.encodeZstd()
+        return source.encodeZstd(coroutineContext)
     }
 
     override fun encode(source: ByteWriteChannel, coroutineContext: CoroutineContext): ByteWriteChannel {
-        return source.encodeZstd()
+        return source.encodeZstd(coroutineContext)
     }
 }
 
@@ -44,6 +48,27 @@ private suspend fun ByteReadChannel.encodeZstdTo(destination: ByteWriteChannel) 
         destination.writeFully(it.toByteArray())
     }
 }
+
+@OptIn(DelicateCoroutinesApi::class)
+private fun ByteReadChannel.decodeZstd(
+    coroutineContext: CoroutineContext = Dispatchers.Unconfined
+): ByteReadChannel = GlobalScope.writer(coroutineContext, autoFlush = true) {
+    val outputStream = ByteArrayOutputStream()
+    while(!isClosedForRead && isActive) {
+        val packet = readRemaining(DEFAULT_HTTP_BUFFER_SIZE.toLong())
+        while(!packet.exhausted()) {
+            outputStream.writeBytes(packet.readByteArray())
+        }
+    }
+    val sourceBytes = outputStream.use { it.toByteArray() }
+    val zstdIS = ZstdInputStream(ByteArrayInputStream(sourceBytes)).apply {
+        continuous = true
+    }
+    zstdIS.use {
+        val bytes = it.readAllBytes()
+        channel.writeFully(bytes)
+    }
+}.channel
 
 @OptIn(DelicateCoroutinesApi::class)
 private fun ByteReadChannel.encodeZstd(
